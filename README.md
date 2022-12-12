@@ -2,4 +2,4 @@
 MMI_Kopplers_symmetrical
 
 
-this is TBC Boundary conditions
+this is TBC Boundary conditions from Herr Roth
