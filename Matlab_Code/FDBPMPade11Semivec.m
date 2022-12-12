@@ -142,7 +142,10 @@ if strcmp(fieldtype,'gauss') % Excitation with a gaussian beam
 %         yg1 = yg1 - yg1(r_max(1),c_max(1)); % y-grid for the definition of the gaussian beam
         
      
-        % for symmetrical Index Profil: 
+        % for symmetrical or unsymmetrical step Index Profil: 
+        xg1 = xg1 - EXCITATION.coup_center(2); % x-grid for the definition of the gaussian beam
+        yg1 = yg1 - EXCITATION.coup_center(1); % y-grid for the definition of the gaussian beam
+
         GaussInput = 1*exp(-xg1.^2/(2*(sigma_x))^2 -yg1.^2/(2*(sigma_y))^2);  % Definition of gaussian beam
         phiInput = zeros(size(n,1),size(n,2));
         phiInput(EXCITATION.gausscoup) = GaussInput(EXCITATION.gausscoup);

@@ -63,7 +63,7 @@ y = linspace(-L_y/2,L_y/2,101);
 x = 1e-12*round(x*1e12);
 y = 1e-12*round(y*1e12);
     
-z = [0:dz:3000e-6];   %  Länge der gesamte z                                                              % Base vector
+z = [0:dz:2000e-6];   %  Länge der gesamte z                                                              % Base vector
 [xg,yg,zg] = meshgrid(x,y,z);                                                       % Base grid
 
 xgb = squeeze(xg(:,:,1));  % Transversal grid of first slice
@@ -86,11 +86,11 @@ nc = repmat(n,[1 1 length(z_coup)]);
 n_dim = size(n);
 %% MMI area
 % rectangle: length=width
-L_MMI = 1200e-6;
+L_MMI = 1800e-6;
 z_MMI = [L_coup+dz:dz:L_coup+L_MMI];
 
-x_width_MMI = 140;
-y_width_MMI = 90;
+x_width_MMI = 80;
+y_width_MMI = 80;
 
 n = ones(length(y),length(x))*n_glass; 
 n(n_dim(1)/2 - y_width_MMI/2:n_dim(1)/2 + y_width_MMI/2, n_dim(2)/2 - x_width_MMI/2:n_dim(2)/2 + x_width_MMI/2) = n_1;
@@ -98,51 +98,35 @@ a = repmat(n,[1 1 length(z_MMI)]);
 nc = cat(3,nc,a);
 
 %% decoupling Output area
-L_decoup = 1000e-6;
-z_decoup = [z_MMI(end)+dz:dz:z(end)];
-
-distance_x_center = 50;
-distance_y_center = 0;
-top_center = [y((length(y)+1)/2 + distance_y_center),x((length(x)+1)/2 + distance_x_center)]; % (y,x)
-butten_center = [y((length(y)+1)/2 + distance_y_center),x((length(x)+1)/2 - distance_x_center)]; % (y,x)
-
-
-% top output and Recess area(Circle)
-L_recess = 600e-6;
-z_recess = [z_decoup(1):dz:z(end)];
-
-rad_Recess_button = 25e-6;
-rad_decoup_top = 5e-6;
-
-n = ones(length(y),length(x))*n_glass; 
-B=sqrt((xg(:,:,1)-top_center(2)).^2+(yg(:,:,1)-top_center(1)).^2)<=rad_decoup_top;
-n(B)=n_1;
-B=sqrt((xg(:,:,1)-butten_center(2)).^2+(yg(:,:,1)-butten_center(1)).^2)<=rad_Recess_button;
-n(B)=n_1;
-
-n = repmat(n,[1 1 length(z_recess)]);
-nc = cat(3,nc,n);
-
-
-% button output
-
-% L_recess_out = 600e-6;
+% L_decoup = 200e-6;
+% z_decoup = [z_MMI(end)+dz:dz:z(end)];
+% rad_decoup = 5e-6;
+% 
+% distance_x_center = 8;
+% distance_y_center = 8;
+% top_center = [y((length(y)+1)/2 + distance_y_center),x((length(x)+1)/2)]; % (y,x)
+% butten_center = [y((length(y)+1)/2 - distance_y_center),x((length(x)+1)/2)]; % (y,x)
+% 
+% n = ones(length(y),length(x))*n_luft; 
+% B1=sqrt((xg(:,:,1)-top_center(2)).^2+(yg(:,:,1)-top_center(1)).^2)<=rad_decoup;
+% B2=sqrt((xg(:,:,1)-butten_center(2)).^2+(yg(:,:,1)-butten_center(1)).^2)<=rad_decoup;
+% n(B1) = n_1;
+% n(B2) = n_1;
+% 
+% a = repmat(n,[1 1 length(z_decoup)]);
+% nc = cat(3,nc,a);
 
 
 out = ['  Index profile loaded: ' num2str(toc) 's.'];
 disp(out)
 tic
-
-%% Visualization at slice
-% slice = 2802;
 % figure
-% surf(xg(:,:,1)*1e6,yg(:,:,1)*1e6,abs(nc(:,:,slice)))
-% xlabel('x [\mum]')
-% ylabel('y [\mum]')
-% title(['field distribution at ',num2str(slice),' slice'])
-% shading flat %每个网格线段和面具有恒定颜色，该颜色由该线段的端点或该面的角边处具有最小索引的颜色值确定
-
-% x-z Visualization
+% surf(xg(:,:,1),yg(:,:,1),nc(:,:,1))
+% xlabel('x')
+% ylabel('y')
+% zlabel('n')
+% title('MMI section slice.1')
+% % x-z Visualization
 % figure
 % n_int = squeeze(sum(abs(nc) .* abs(yg)));
 % surf(z(2:end),x,squeeze(n_int(:,2:end))/max(max(n_int(:,2:end))))

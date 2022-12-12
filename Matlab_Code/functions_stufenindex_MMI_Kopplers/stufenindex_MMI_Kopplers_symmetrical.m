@@ -1,6 +1,10 @@
-%% Create the concentration profile of an open MMI-Element
-% Exemplary BPM calculation for a rectangular step-index MMI-element
+%% Exemplary BPM calculation for a rectangular step-index MMI-element
+%% Parameter: L_x L_y L_coup L_MMI
+clear
+close all
+clc
 
+% Create the concentration profile of an open MMI-Element
 % Parameter definition
 PROGRESS = 'cl';
 
@@ -210,6 +214,7 @@ disp(out);
 Ex_int = squeeze(sum(abs(Ex) .* abs(yg)));
 figure
 surf(z(2:end)*1e6,x*1e6,squeeze(Ex_int(:,2:end))/max(max(Ex_int(:,2:end))))
+colorbar;
 shading flat
 xlabel('z [\mum]')
 ylabel('x [\mum]')
