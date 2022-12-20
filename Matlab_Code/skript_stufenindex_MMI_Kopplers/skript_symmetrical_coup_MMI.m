@@ -1,6 +1,11 @@
 %% Exemplary BPM calculation for a rectangular step-index MMI-element
-%% The external material at the beginning of the input and output channels is glass
-%% Parameter: L_x L_y L_coup L_MMI
+
+%% default parameters: 
+%% L_{coup}=200um L_{MMI}=1800um  
+%% x_{MMIlength}=80um y_{MMIwidth}=80um
+%% r_{coup}=25um x_{coupcenter}=-50um y_{coupcenter}=0
+%% x_{MMIlength}=140um y_{MMIwidth}=90um
+
 clear
 close all
 clc
@@ -250,25 +255,26 @@ ylabel('x [\mum]')
 title('Normalized absolute E-field (after y-integration) [a.u.]')
 % axis([z(2) z(end) x(1) x(end) 0 1])
 
-%% Visualization at maximums value
-Ex_max = squeeze(abs(max(max(Ex))));
+% %Visualization at maximums value
 
-figure
-plot(z*1e6,Ex_max,'o')
-xlabel('z [\mum]')
-ylabel('Ex [a.u.]')
-title('Maximal E-field at each slice')
-%% Visualization at slice
-slice = 1;
-figure
-surf(xg(:,:,1)*1e6,yg(:,:,1)*1e6,abs(Ex(:,:,slice)))
-xlabel('x [\mum]')
-ylabel('y [\mum]')
-title(['field distribution at ',num2str(slice),' slice'])
-shading flat %每个网格线段和面具有恒定颜色，该颜色由该线段的端点或该面的角边处具有最小索引的颜色值确定
+% Ex_max = squeeze(abs(max(max(Ex))));
+% 
+% figure
+% plot(z*1e6,Ex_max,'o')
+% xlabel('z [\mum]')
+% ylabel('Ex [a.u.]')
+% title('Maximal E-field at each slice')
 
+% % Visualization at slice
+% slice = 1;
+% figure
+% surf(xg(:,:,1)*1e6,yg(:,:,1)*1e6,abs(Ex(:,:,slice)))
+% xlabel('x [\mum]')
+% ylabel('y [\mum]')
+% title(['field distribution at ',num2str(slice),' slice'])
+% shading flat %每个网格线段和面具有恒定颜色，该颜色由该线段的端点或该面的角边处具有最小索引的颜色值确定
 
-%% animation
+% %animation
 % for i = 1:20:length(z)
 %     slicestep=int2str(i);
 %     imagesc(abs(Ex(:,:,i)));
@@ -281,3 +287,48 @@ shading flat %每个网格线段和面具有恒定颜色，该颜色由该线段
 %     
 %     pause(0.1)
 % end
+
+%% caluation Hy, Hz and Poynting vector S
+miu_0 = pi*4e-7;
+C_0 = 2.99792458e+8;
+omega = C_0*beta_0;
+Hy = zeros(size(Ex));
+Hz = zeros(size(Ex));
+
+for i = 2:length(z)-1
+    Hy(:,:,i) = i*(Ex(:,:,i-1) + Ex(:,:,i+1))/(dz*omega*miu_0); % (y,x,z)
+end
+Hy(:,:,1) = i*(Ex(:,:,1) + Ex(:,:,2))/(dz*omega*miu_0);
+Hy(:,:,end) = i*(Ex(:,:,end-1) + Ex(:,:,end))/(dz*omega*miu_0);
+
+
+for i = 2:length(y)-1
+    Hz(i,:,:) = i*(Ex(i-1,:,:) + Ex(i+1,:,:))/(dy_coarse*omega*miu_0); % (y,x,z)
+end
+Hz(1,:,:) = i*(Ex(1,:,:) + Ex(1,:,:))/(dy_coarse*omega*miu_0);
+Hz(end,:,:) = i*(Ex(end-1,:,:) + Ex(end,:,:))/(dy_coarse*omega*miu_0);
+
+Sz = abs(0.5*real(Ex.*Hy)); % 0.5*real(Ex.*Hy)
+Sy = 0.5*real(Ex.*Hz);
+
+out = [' Poynting vector S caluated.'];
+disp(out);
+
+%% Visualization S after y Intergration
+Sz_int = squeeze(sum(Sz .* abs(yg)));
+figure
+surf(z(2:end)*1e6,x*1e6,squeeze(Sz_int(:,2:end))/max(max(Sz_int(:,2:end))))
+colorbar;
+shading flat
+xlabel('z [\mum]')
+ylabel('x [\mum]')
+title('Normalized absolute Sz (after y-integration) [a.u.]')
+
+Sy_int = squeeze(sum(abs(Sy) .* abs(yg)));
+figure
+surf(z(2:end)*1e6,x*1e6,squeeze(Sy_int(:,2:end))/max(max(Sz_int(:,2:end))))
+colorbar;
+shading flat
+xlabel('z [\mum]')
+ylabel('x [\mum]')
+title('Normalized absolute Sy (after y-integration) [a.u.]')

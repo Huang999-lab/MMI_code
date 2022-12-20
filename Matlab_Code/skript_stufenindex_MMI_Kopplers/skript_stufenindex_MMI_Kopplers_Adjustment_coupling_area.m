@@ -1,6 +1,11 @@
 %% Exemplary BPM calculation for a rectangular step-index MMI-element
-%% The external material at the beginning of the input and output channels is glass
-%% Parameter: L_x L_y L_coup L_MMI
+
+%% default parameters: 
+%% L_{coup}=200um L_{MMI}=5800um  
+%% x_{MMIlength}=140um y_{MMIwidth}=90um
+%% r_{coup}=25um x_{coupcenter}=-50um y_{coupcenter}=0
+
+
 clear
 close all
 clc
@@ -50,15 +55,15 @@ tic
 
 beta_0 = 2*pi/lambda;       % Wave number
 % Loading index profile and base vectors
-L_x = 150e-6; % Länge der querschnitt in x
-L_y = 100e-6;
+L_x = 200e-6; % Länge der querschnitt in x
+L_y = 200e-6;
 n_glass = 1.522;
 n_1 = 1.530;
 neff = (n_glass+n_1)/2;
 
 % Grid
-x = linspace(-L_x/2,L_x/2,151);    
-y = linspace(-L_y/2,L_y/2,101);
+x = linspace(-L_x/2,L_x/2,L_x*1e6+1);    
+y = linspace(-L_y/2,L_y/2,L_y*1e6+1);
 % Removing round-off errors
 x = 1e-12*round(x*1e12);
 y = 1e-12*round(y*1e12);
@@ -71,7 +76,7 @@ ygb = squeeze(yg(:,:,1));  % Transversal grid of first slice
 
 %% coupling Input area
 distance_y_center = 0;
-distance_x_center = -50;
+distance_x_center = -20;
 Excitation.coup_center = [y((length(y)+1)/2 + distance_y_center),x((length(x)+1)/2 + distance_x_center)]; % (y,x)
 
 L_coup = 200e-6;
@@ -89,8 +94,8 @@ n_dim = size(n);
 L_MMI = 1800e-6;
 z_MMI = [L_coup+dz:dz:L_coup+L_MMI];
 
-x_width_MMI = 140;
-y_width_MMI = 90;
+x_width_MMI = L_x*1e6-10;
+y_width_MMI = L_y*1e6-10;
 
 n = ones(length(y),length(x))*n_glass; 
 n(n_dim(1)/2 - y_width_MMI/2:n_dim(1)/2 + y_width_MMI/2, n_dim(2)/2 - x_width_MMI/2:n_dim(2)/2 + x_width_MMI/2) = n_1;
@@ -250,25 +255,24 @@ ylabel('x [\mum]')
 title('Normalized absolute E-field (after y-integration) [a.u.]')
 % axis([z(2) z(end) x(1) x(end) 0 1])
 
-%% Visualization at maximums value
-Ex_max = squeeze(abs(max(max(Ex))));
+% %% Visualization at maximums value
+% Ex_max = squeeze(abs(max(max(Ex))));
+% figure
+% plot(z*1e6,Ex_max,'o')
+% xlabel('z [\mum]')
+% ylabel('Ex [a.u.]')
+% title('Maximal E-field at each slice')
 
-figure
-plot(z*1e6,Ex_max,'o')
-xlabel('z [\mum]')
-ylabel('Ex [a.u.]')
-title('Maximal E-field at each slice')
-%% Visualization at slice
-slice = 1;
-figure
-surf(xg(:,:,1)*1e6,yg(:,:,1)*1e6,abs(Ex(:,:,slice)))
-xlabel('x [\mum]')
-ylabel('y [\mum]')
-title(['field distribution at ',num2str(slice),' slice'])
-shading flat %每个网格线段和面具有恒定颜色，该颜色由该线段的端点或该面的角边处具有最小索引的颜色值确定
+% %% Visualization at slice
+% slice = 1;
+% figure
+% surf(xg(:,:,1)*1e6,yg(:,:,1)*1e6,abs(Ex(:,:,slice)))
+% xlabel('x [\mum]')
+% ylabel('y [\mum]')
+% title(['field distribution at ',num2str(slice),' slice'])
+% shading flat %每个网格线段和面具有恒定颜色，该颜色由该线段的端点或该面的角边处具有最小索引的颜色值确定
 
-
-%% animation
+% animation
 % for i = 1:20:length(z)
 %     slicestep=int2str(i);
 %     imagesc(abs(Ex(:,:,i)));
@@ -281,3 +285,49 @@ shading flat %每个网格线段和面具有恒定颜色，该颜色由该线段
 %     
 %     pause(0.1)
 % end
+
+%% caluation Hy, Hz and Poynting vector S
+miu_0 = pi*4e-7;
+C_0 = 2.99792458e+8;
+omega = C_0*beta_0;
+Hy = zeros(size(Ex));
+Hz = zeros(size(Ex));
+
+for i = 2:length(z)-1
+    Hy(:,:,i) = i*(Ex(:,:,i-1) + Ex(:,:,i+1))/(dz*omega*miu_0); % (y,x,z)
+end
+Hy(:,:,1) = i*(Ex(:,:,1) + Ex(:,:,2))/(dz*omega*miu_0);
+Hy(:,:,end) = i*(Ex(:,:,end-1) + Ex(:,:,end))/(dz*omega*miu_0);
+
+
+for i = 2:length(y)-1
+    Hz(i,:,:) = i*(Ex(i-1,:,:) + Ex(i+1,:,:))/(dy_coarse*omega*miu_0); % (y,x,z)
+end
+Hz(1,:,:) = i*(Ex(1,:,:) + Ex(1,:,:))/(dy_coarse*omega*miu_0);
+Hz(end,:,:) = i*(Ex(end-1,:,:) + Ex(end,:,:))/(dy_coarse*omega*miu_0);
+
+Sz = abs(0.5*real(Ex.*Hy)); % 0.5*real(Ex.*Hy)
+Sy = 0.5*real(Ex.*Hz);
+
+out = [' Poynting vector S caluated.'];
+disp(out);
+
+%% Visualization Sz after y Intergration
+Sz_int = squeeze(sum(Sz .* abs(yg)));
+figure
+surf(z(2:end)*1e6,x*1e6,squeeze(Sz_int(:,2:end))/max(max(Sz_int(:,2:end))))
+colorbar;
+shading flat
+xlabel('z [\mum]')
+ylabel('x [\mum]')
+title('Normalized absolute Sz') %  L_{coup}=200um L_{MMI}=5800um r_{coup}=25um x_{coupcenter}=-25um y_{coupcenter}=0 x_{MMIlength}=120um y_{MMIwidth}=100um 
+
+%% Visualization Sy after y Intergration
+% Sy_int = squeeze(sum(abs(Sy) .* abs(yg)));
+% figure
+% surf(z(2:end)*1e6,x*1e6,squeeze(Sy_int(:,2:end))/max(max(Sz_int(:,2:end))))
+% colorbar;
+% shading flat
+% xlabel('z [\mum]')
+% ylabel('x [\mum]')
+% title('Normalized absolute Sy: L_{coup}=200um L_{MMI}=1800um r_{coup}=25um x_{coupcenter}=-50um y_{coupcenter}=0 x_{MMIlength}=140um y_{MMIwidth}=90um')
